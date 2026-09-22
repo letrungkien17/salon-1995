@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: salon1995-mysql
+    restart: always
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+      MYSQL_DATABASE: salon_booking
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init-mysql:/docker-entrypoint-initdb.d
+    networks:
+      - salon1995-network
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: salon1995-rabbitmq
+    restart: always
+    ports:
+      - "5672:5672"     # AMQP protocol
+      - "15672:15672"   # Management Web UI
+    networks:
+      - salon1995-network
+
+  backend:
+    build:
+      context: ./backend/Salon1995.Api
+      dockerfile: Dockerfile
+    container_name: salon1995-api
+    restart: always
+    ports:
+      - "5000:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=mysql;Port=3306;Database=salon_booking;User=root;Password=;CharSet=utf8mb4;
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Port=5672
+      - Jwt__Key=Salon1995_SuperSecureSecretKey_ForJwtBearerAuthentication2026_LongEnoughKeyForHmacSha256
+      - Jwt__Issuer=Salon1995
+      - Jwt__Audience=Salon1995Clients
+    depends_on:
+      - mysql
+      - rabbitmq
+    networks:
+      - salon1995-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: salon1995-frontend
+    restart: always
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - salon1995-network
+
+networks:
+  salon1995-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
