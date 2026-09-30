@@ -228,10 +228,10 @@ public class AuthService : IAuthService
     public async Task<AuthResponseDto?> RefreshTokenAsync(string refreshToken)
     {
         var storedToken = await _context.RefreshTokens
-            .Include(r => r.User)!
-                .ThenInclude(u => u.Role)
-            .Include(r => r.User)!
-                .ThenInclude(u => u.Employee)
+            .Include(r => r.User)
+                .ThenInclude(u => u!.Role)
+            .Include(r => r.User)
+                .ThenInclude(u => u!.Employee)
             .Include(r => r.Customer)
             .FirstOrDefaultAsync(r => r.Token == refreshToken);
 
